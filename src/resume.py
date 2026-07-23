@@ -32,13 +32,20 @@ s3_client = boto3.client(
     
 )
 
+class IssueDetail(BaseModel):
+    issue_type: str
+    description: str
+    suggestion: str
+
 class ResumeAnalysis(BaseModel):
-    ats_score: int
+    ats_parseability_score: int
     experience_years: int
     skills: list[str]
-    strengths: list[str]
-    gaps: list[str]
+    formatting_issues: list[str]
+    writing_issues: list[IssueDetail]
     suggestions: list[str]
+
+
 
 class ResumeRequest(BaseModel):
     analysis_id: str
@@ -47,11 +54,11 @@ class ResumeRequest(BaseModel):
     
 
 class resumeResponse(BaseModel):
-    ats_score: int
+    ats_parseability_score: int
     experience_years: int
-    skills: list
-    strengths: list[str]
-    gaps: list[str]
+    skills: list[str]
+    formatting_issues: list[str]
+    writing_issues: list[IssueDetail]
     suggestions: list[str]
     model: str
     
@@ -72,8 +79,13 @@ def analyze_resume(resume_text: str) -> ResumeAnalysis:
     completion = llm_client.responses.parse(
         model = MODEL,
         input = [
-            {"role": "system", "content": "you are an ATS (Applicant Tracking System) resume analyzer. Given resume text, score it and extract structured feedback."},
-            {"role": "user", "content": resume_text}
+          {"role": "system", "content": 
+        "You are an ATS (Applicant Tracking System) resume analyzer. "
+        "Given resume text, score its ATS-parseability and flag formatting "
+        "and writing issues in the document itself — do not compare it against "
+        "any specific job or role, since none is provided."
+        },
+        {"role": "user", "content": resume_text}
         ],
         text_format = ResumeAnalysis,
     )
@@ -93,14 +105,5 @@ async def resume_endpoint(request: ResumeRequest):
     
     analysis = analyze_resume(resume_text)
     return resumeResponse(**analysis.model_dump(), model=MODEL)
-    # return resumeResponse(
-    #     ats_score=85,
-    #     experience_years=5,
-    #     skills=["Python", "FastAPI", "SQLAlchemy"],
-    #     strengths=["Strong backend development skills", "Experience with cloud deployment"],
-    #     gaps=["Limited frontend experience", "No experience with machine learning"],
-    #     suggestions=["Consider taking frontend development courses", "Explore opportunities to work on machine learning projects"],
-    #     model="mock"
-    # )
-    
+
     
