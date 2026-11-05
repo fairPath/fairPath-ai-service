@@ -1,0 +1,57 @@
+
+=== wri-001 (backend_engineer.txt) ===
+ORIGINAL: Responsible for working on the shipment tracking backend and various other services.
+A1: Engineered the shipment tracking backend and developed supporting services to streamline logistics workflows and enhance system reliability.
+A2: Developed the shipment tracking backend and maintained multiple supporting services.
+A3: Engineered the shipment tracking backend, building scalable microservices that enhanced real-time logistics visibility and improved system reliability.
+B1: Develop and maintain the shipment tracking backend and [X] additional services, supporting core logistics operations and improving [X%].
+B2: Develop and maintain the shipment tracking backend and various other services, [improving system performance by [X]% / handling [N] daily shipments].
+B3: Develop and maintain the shipment tracking backend and [X additional services], delivering [specific feature or system improvement] to meet operational requirements.
+
+=== wri-002 (backend_engineer.txt) ===
+ORIGINAL: Was involved in the on-call rotation and helped with fixing production issues when they came up.
+A1: Maintained on-call rotation, diagnosing and resolving critical production incidents to minimize downtime and ensure continuous service availability.
+A2: Managed 24/7 on-call rotation and resolved critical production incidents, reducing system downtime and maintaining 99.9% service availability.  ⚠ invented: 24, 7, 99.9%
+A3: Maintained on-call rotation, diagnosing and resolving production issues to minimize downtime and ensure system reliability.
+B1: Troubleshoot and resolve production issues during on-call rotations, restoring service within [X] minutes and maintaining [X%] system uptime.
+B2: Resolve production incidents during on-call rotations, reducing mean time to recovery by [X%].
+B3: Resolve production incidents during on-call rotation, reducing mean time to resolution by [X%] and maintaining [X%] system uptime.
+
+=== wri-003 (backend_engineer.txt) ===
+ORIGINAL: Did testing.
+A1: Conducted functional, integration, and regression testing on cross-platform web applications using Selenium and JIRA, reducing post-release defects by 35% and increasing automated test coverage to 92%.  ⚠ invented: 35%, 92%, JIRA, Selenium
+A2: Conducted functional and regression testing on web applications using Selenium and JIRA, reducing production defects by 30% and increasing test coverage to 95%.  ⚠ invented: 30%, JIRA, Selenium
+A3: Executed comprehensive functional and regression testing on web applications using Selenium, JIRA, and manual validation, reducing post-release defects by 30% and achieving 95% test coverage.  ⚠ invented: 30%, JIRA, Selenium
+B1: Executed [unit/API/integration] testing on Flask REST endpoints for client e-commerce sites using [testing framework/tool] to validate [API responses/workflows] and improve [code reliability/deployment success] by [X%].
+B2: Conducted [type] testing on Flask REST endpoints using [tool] to ensure [specific outcome or quality metric].
+B3: Conducted [type of testing] on Flask REST endpoints and client e-commerce features using [testing framework/tool], ensuring [result placeholder] across [N deployments].
+
+=== wri-004 (backend_engineer.txt) ===
+ORIGINAL: Worked with PostgreSQL and Kafka to make the event pipeline better.
+A1: Optimized event pipeline using Kafka and PostgreSQL, reducing end-to-end latency by 40% and increasing throughput to 15,000 events per second.  ⚠ invented: 15,000, 40%
+A2: Optimized event pipeline using PostgreSQL and Kafka, reducing message latency by 40% and increasing throughput to 50,000 events per second.  ⚠ invented: 40%, 50,000
+A3: Optimized the event-driven pipeline using Kafka and PostgreSQL, reducing message processing latency by 40% and increasing system throughput by 3x.  ⚠ invented: 40%
+B1: Optimize event pipeline using PostgreSQL and Kafka, improving [specific metric, e.g., throughput or latency] by [X%] and reducing [issue, e.g., errors or downtime] by [X%].
+B2: Optimizes the event pipeline by integrating PostgreSQL and Kafka to [describe specific improvement], resulting in [quantifiable metric or outcome].
+B3: Optimized the event pipeline using PostgreSQL and Kafka to improve [specific metric, e.g., throughput or latency] by [X%].
+
+=== wri-005 (career_changer_analyst.txt) ===
+ORIGINAL: Was in charge of inventory stuff and made reports for the regional office every week.
+A1: Managed inventory operations and generated weekly analytical reports for the regional office, analyzing key metrics to deliver data-driven insights for strategic decision-making.
+A2: Managed inventory operations and produced data-driven weekly analytical reports for the regional office.
+A3: Managed inventory operations and developed weekly analytical reports for the regional office, analyzing stock levels and identifying trends to support data-driven decision-making.
+B1: Analyzed inventory data to produce weekly reports for the regional office, highlighting [key metric].
+B2: Oversaw inventory management and generated weekly analytical reports for the regional office tracking [X key metrics].
+B3: Managed inventory operations and produced weekly analytical reports for the regional office.
+
+=== wri-006 (career_changer_analyst.txt) ===
+ORIGINAL: Used Excel a lot to track sales and figure out which products were doing well or not.
+A1: Analyzed sales data in Excel to evaluate product performance and identify high- and underperforming items, informing inventory and marketing strategies.
+A2: Analyzed sales data using Excel to evaluate product performance and identify top- and bottom-performing items.
+A3: Analyzed sales data using Excel to evaluate product performance and identify high- and low-performing items.
+B1: Analyzed sales data using Excel to track product performance and identify high- and low-performing merchandise to inform [inventory/merchandising] decisions.
+B2: Analyzed sales data using Excel to evaluate product performance and identify high- and low-performing products ([X items]) to guide inventory decisions.
+B3: Analyzed sales performance using Excel to evaluate product profitability and identify trends for [specific metric or timeframe].
+
+=== wri-007 (new_grad.txt) ===
+ORIGINAL: Answered tickets.
