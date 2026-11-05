@@ -4,13 +4,14 @@ FastAPI microservice handling resume analysis for PathAI. Stateless — never wr
 
 ## Endpoints
 
-- `POST /resume` — fetches a resume PDF from S3 by key, extracts text, runs LLM-based ATS analysis, returns structured JSON. Requires `X-Internal-Token` header (shared secret with `fairPath-backend`).
+- `POST /resume` — fetches a resume PDF from S3 by key, extracts text, redacts person names and direct contact details with Presidio, then analyzes the redacted text. Requires `X-Internal-Token` header (shared secret with `fairPath-backend`).
 - `GET /health` — health check.
 
 ## Running locally
 
 ```
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 cp .env.example .env   # fill in values
 uvicorn main:app --reload --app-dir src
 ```
@@ -21,7 +22,7 @@ See `.env.example`. `OPENAI_BASE_URL`/`OPENAI_MODEL` point at LM Studio in dev, 
 
 ## Deployment
 
-Docker image via the included `Dockerfile`, deployed to Railway.
+Docker image via the included `Dockerfile`, deployed to Railway. The image installs spaCy's `en_core_web_sm` model. The endpoint redacts names found as standalone lines near the beginning or end of the resume, plus emails, phone numbers, URLs, and US-style street addresses, before passing the text to the configured AI model. It does not request organization or general location entities, so employer and school names are retained. PII detection is automated and can miss sensitive text. Configure `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `OPENAI_MODEL` for the intended AI provider.
 
 ## Origin
 
