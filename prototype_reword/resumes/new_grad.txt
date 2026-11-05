@@ -1,0 +1,27 @@
+Sam Okafor
+sam.okafor@example.com | (555) 019-4420 | Columbus, OH
+
+EDUCATION
+B.S. Information Systems, Ohio State University, May 2025
+GPA: 3.4
+
+EXPERIENCE
+
+IT Help Desk Intern, Ohio State University Libraries — Columbus, OH
+May 2024 – August 2024
+- Answered tickets.
+- Helped staff and students with laptop, printer and Wi-Fi problems at the main library desk.
+- Wrote 12 how-to articles for the internal knowledge base on common printer and VPN fixes.
+
+PROJECTS
+
+Campus Club Event App (capstone, team of 4)
+- I was the person who did the frontend for our app using React and it was used by some clubs.
+- Designed the event RSVP flow and connected it to a Firebase backend.
+- Presented the final app to a panel of faculty and local employers.
+
+Personal Budget Tracker
+- Made a budget app.
+
+SKILLS
+React, JavaScript, HTML/CSS, Firebase, SQL, Microsoft 365

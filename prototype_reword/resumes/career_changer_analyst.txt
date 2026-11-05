@@ -1,0 +1,28 @@
+Priya Raman
+Data Analyst
+priya.raman@example.com | (555) 014-7781 | Austin, TX
+
+SUMMARY
+Former retail operations manager moving into data analytics, with hands-on SQL, Excel and Tableau experience.
+
+EXPERIENCE
+
+Store Operations Manager, Harbor Home Goods — Austin, TX
+January 2018 – August 2024
+- Managed a team of 14 associates across two shifts.
+- Was in charge of inventory stuff and made reports for the regional office every week.
+- Used Excel a lot to track sales and figure out which products were doing well or not.
+- Reduced weekly shrinkage losses by 18% by redesigning the stockroom check-in process.
+- Handled scheduling, hiring and training of new staff members as needed.
+
+PROJECTS
+
+Austin Bike-Share Ridership Dashboard (personal project)
+- Made a dashboard in Tableau using public bike-share data.
+- Cleaned 1.2 million trip records with SQL and Python (pandas) before loading them into Tableau.
+
+CERTIFICATIONS
+Google Data Analytics Professional Certificate, 2024
+
+SKILLS
+SQL, Excel, Tableau, Python (pandas), Google Sheets

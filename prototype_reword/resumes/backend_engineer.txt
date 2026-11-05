@@ -1,0 +1,28 @@
+Jordan Avery
+Backend Software Engineer
+jordan.avery@example.com | (555) 010-2233 | Portland, OR
+
+SUMMARY
+Backend engineer with 4 years of experience building APIs and data pipelines in Java and Python.
+
+EXPERIENCE
+
+Software Engineer, Brightline Logistics — Portland, OR
+March 2022 – Present
+- Responsible for working on the shipment tracking backend and various other services.
+- Migrated the order service from a monolith to Spring Boot microservices, cutting p95 latency from 800ms to 210ms.
+- Was involved in the on-call rotation and helped with fixing production issues when they came up.
+- Mentored 2 junior engineers on code review and testing practices.
+- Worked with PostgreSQL and Kafka to make the event pipeline better.
+
+Junior Developer, Cascade Web Studio — Remote
+June 2020 – February 2022
+- Built REST endpoints in Flask for client e-commerce sites.
+- Did testing.
+- Helped the team move deployments from manual FTP uploads to a GitHub Actions pipeline.
+
+SKILLS
+Java, Spring Boot, Python, Flask, PostgreSQL, Kafka, Docker, GitHub Actions
+
+EDUCATION
+B.S. Computer Science, Oregon State University, 2020
