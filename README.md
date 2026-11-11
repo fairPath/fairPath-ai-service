@@ -27,3 +27,12 @@ Docker image via the included `Dockerfile`, deployed to Railway. The image insta
 ## Origin
 
 Extracted from the `fastapi-course` learning workspace (Lessons 12-15) once the resume-analysis endpoint was feature-complete. That workspace remains as reference/teaching material and is not the deployed source going forward — this repo is.
+
+## Tests
+
+```
+pip install -r requirements-dev.txt
+pytest
+```
+
+Endpoint tests drive `POST /resume` through FastAPI's test client with the LLM gateway (`llm.py`) and the S3 fetch (`storage.py`) faked via dependency overrides. They use synthetic PDFs generated at test time; no real resume data belongs in this repo.
