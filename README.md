@@ -4,7 +4,12 @@ FastAPI service for resume analysis and job comparison. It is stateless with res
 
 ## Endpoints
 
-- `POST /resume` — fetches a resume PDF from S3 by key, extracts text, redacts person names and direct contact details with Presidio, then analyzes the redacted text. Requires `X-Internal-Token`.
+- `POST /resume` — Analyze. Requires the `X-Internal-Token` header (shared secret with `PathAI-backend`).
+  - Request: `{ correlation_id, s3_key, known_pii: { full_name, email, phone } }` (each `known_pii` field nullable; deny-list only).
+  - Response: `{ correlation_id, scores: { formatting, parseability, writing, overall }, issues: [IssueDetail], model, pipeline_version }`. Models live in `src/contract.py`.
+  - Fetches the PDF from S3 by key, extracts the text, runs the Checks (`src/checks.py`) and the Scorer (`src/scorer.py`). Weights, Issue types and `pipeline_version` are in `src/analysis_config.py`; bump `PIPELINE_VERSION` on any change to prompt, rubric, Checks, weights or model.
+  - Walking skeleton: only the `MISSING_CONTACT` Check runs and no LLM call is made, so `model` is `null`. A Category with no components yet scores 100. The redactor and the LLM gateway (`src/redaction.py`, `src/llm.py`) are kept for the slices that add the first LLM call.
+  - Never logs Resume text; only the `correlation_id` and counts.
 - `POST /job-comparison` — fetches an immutable resume snapshot from S3, extracts and redacts its text with Presidio, and returns a structured resume-versus-job comparison. Requires `X-Internal-Token`. Scanned PDFs without extractable text return HTTP 422.
 - `GET /health` — health check.
 
@@ -40,4 +45,4 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Endpoint tests drive `POST /resume` through FastAPI's test client with the LLM gateway (`llm.py`) and the S3 fetch (`storage.py`) faked via dependency overrides. They use synthetic PDFs generated at test time; no real resume data belongs in this repo.
+Endpoint tests drive `POST /resume` through FastAPI's test client with the S3 fetch (`storage.py`) faked via a dependency override; the Scorer and the Checks also have pure unit tests. They use synthetic PDFs generated at test time; no real resume data belongs in this repo.
