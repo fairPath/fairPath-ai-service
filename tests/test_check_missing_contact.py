@@ -40,3 +40,16 @@ def test_date_ranges_and_years_are_not_mistaken_for_a_phone():
     text = "Jane Testperson\nEXPERIENCE\nAcme 2019 - 2020, 2021-2024\nZIP 12345\n"
 
     assert check_missing_contact(text).value == 0
+
+
+# Known gap: PHONE_PATTERN is deliberately NANP (US/Canada) only for now.
+# A resume whose only contact is a non-US number gets a false MISSING_CONTACT.
+# Flip this (and widen PHONE_PATTERN) when international support is added.
+@pytest.mark.xfail(reason="international phone formats not supported yet", strict=True)
+@pytest.mark.parametrize(
+    "phone",
+    ["+44 20 7946 0958", "+61 2 9374 4000", "+33 1 42 68 53 00"],
+    ids=["uk", "au", "fr"],
+)
+def test_non_us_phone_is_recognized(phone):
+    assert check_missing_contact(f"Jane Testperson | {phone}\n{BODY}").value == 1
