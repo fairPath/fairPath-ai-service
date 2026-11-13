@@ -38,6 +38,14 @@ def test_weights_are_relative_within_a_category():
     assert scores.formatting == 63
 
 
+def test_exact_half_rounds_up_despite_float_error():
+    # 100 × (3·0 + 3·0.6 + 2·0.4) / (3 + 3 + 2) = 32.5 exactly; in floats it is
+    # 32.4999…, which would round down to 32.
+    scores = score({"impact": 0, "clarity": 0.6, "spelling": 0.4})
+
+    assert scores.writing == 33
+
+
 def test_not_applicable_components_drop_out_of_both_sums():
     # clarity is not applicable: 100 × (3·0.5 + 2·1 + 2·0) / (3 + 2 + 2) = 50
     scores = score({"impact": 0.5, "clarity": None, "spelling": 1, "grammar": 0})
