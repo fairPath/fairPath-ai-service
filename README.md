@@ -1,10 +1,11 @@
 # fairPath AI Service
 
-FastAPI microservice handling resume analysis for PathAI. Stateless — never writes to Postgres; Spring Boot (`fairPath-backend`) is the sole DB writer and the only caller (never called directly by the frontend).
+FastAPI service for resume analysis and job comparison. It is stateless with respect to application data and never reads or writes database tables. Next.js coordinates resume analysis with this service and Spring. Saved-job comparisons are queued durably in PostgreSQL and processed by a worker inside Spring. Spring is the only service that reads and writes application tables.
 
 ## Endpoints
 
-- `POST /resume` — fetches a resume PDF from S3 by key, extracts text, redacts person names and direct contact details with Presidio, then analyzes the redacted text. Requires `X-Internal-Token` header (shared secret with `fairPath-backend`).
+- `POST /resume` — fetches a resume PDF from S3 by key, extracts text, redacts person names and direct contact details with Presidio, then analyzes the redacted text. Requires `X-Internal-Token`.
+- `POST /job-comparison` — fetches an immutable resume snapshot from S3, extracts and redacts its text with Presidio, and returns a structured resume-versus-job comparison. Requires `X-Internal-Token`. Scanned PDFs without extractable text return HTTP 422.
 - `GET /health` — health check.
 
 ## Running locally
@@ -18,7 +19,11 @@ uvicorn main:app --reload --app-dir src
 
 ## Environment variables
 
-See `.env.example`. `OPENAI_BASE_URL`/`OPENAI_MODEL` point at LM Studio in dev, OpenAI in prod — swappable via env var, no code change.
+See `.env.example`. `OPENAI_BASE_URL`/`OPENAI_MODEL` can point at LM Studio in development or another compatible model provider in production.
+
+## Background comparisons
+
+The AI service's API is unchanged. Configure the backend's `FAIRPATH_AI_SERVICE_URL` and `FAIRPATH_AI_INTERNAL_TOKEN` (matching this service's `INTERNAL_TOKEN`). No additional worker process is needed. See the backend README for recovery and retry behavior.
 
 ## Deployment
 
