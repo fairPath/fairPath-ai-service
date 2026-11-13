@@ -1,6 +1,11 @@
 import io
+import logging
 
 import pdfplumber
+
+# pdfminer logs raw PDF content strings (Resume text) at DEBUG. Cap it so
+# turning on debug logging can never leak a Resume into the logs.
+logging.getLogger("pdfminer").setLevel(logging.WARNING)
 
 
 def extract_text(pdf_bytes: bytes) -> str:

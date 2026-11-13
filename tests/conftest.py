@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from reportlab.pdfgen import canvas
 
+import llm
 import main
 import resume
 
@@ -21,6 +22,9 @@ SYNTHETIC_RESUME_LINES = [
     "EDUCATION",
     "B.S. Computer Science, Example State University",
 ]
+
+# Same synthetic Resume with the contact line removed.
+NO_CONTACT_RESUME_LINES = [line for line in SYNTHETIC_RESUME_LINES if "@" not in line]
 
 
 def make_pdf(lines: list[str]) -> bytes:
@@ -52,38 +56,24 @@ class FakeLLM:
 
 
 @pytest.fixture
-def canned_analysis():
-    return resume.ResumeAnalysis(
-        ats_parseability_score=80,
-        experience_years=4,
-        skills=["Python", "FastAPI"],
-        formatting_issues=["Inconsistent date format"],
-        writing_issues=[
-            resume.IssueDetail(
-                issue_type="weak_verb",
-                description="Bullet only lists a duty.",
-                suggestion="Show the outcome.",
-            )
-        ],
-        suggestions=["Quantify your impact."],
-    )
-
-
-@pytest.fixture
-def fake_llm(canned_analysis):
-    return FakeLLM(result=canned_analysis)
+def fake_llm():
+    return FakeLLM()
 
 
 @pytest.fixture
 def pdf_store():
     """Fake S3: s3_key -> PDF bytes. Tests add entries."""
-    return {"resumes/ok.pdf": make_pdf(SYNTHETIC_RESUME_LINES)}
+    return {
+        "resumes/ok.pdf": make_pdf(SYNTHETIC_RESUME_LINES),
+        "resumes/no-contact.pdf": make_pdf(NO_CONTACT_RESUME_LINES),
+    }
 
 
 @pytest.fixture
 def client(monkeypatch, fake_llm, pdf_store):
     monkeypatch.setattr(resume, "INTERNAL_TOKEN", TOKEN)
-    main.app.dependency_overrides[resume.get_llm] = lambda: fake_llm
+    # Every router imports get_llm from llm, so this one override covers them all.
+    main.app.dependency_overrides[llm.get_llm] = lambda: fake_llm
     main.app.dependency_overrides[resume.get_resume_fetcher] = lambda: pdf_store.__getitem__
     yield TestClient(main.app, raise_server_exceptions=False)
     main.app.dependency_overrides.clear()
