@@ -10,7 +10,8 @@ load_dotenv(override=True)
 
 from analysis_config import PIPELINE_VERSION  # noqa: E402
 from contract import AnalyzeRequest, AnalyzeResponse  # noqa: E402
-from extraction import extract_text  # noqa: E402
+from errors import ExtractionError, error_response  # noqa: E402
+from extraction import extract_resume_text  # noqa: E402
 from pipeline import analyze_text  # noqa: E402
 from storage import fetch_resume_bytes  # noqa: E402
 
@@ -44,7 +45,11 @@ def resume_endpoint(
     # Walking skeleton: Checks and the Scorer only, no LLM call, so nothing is
     # redacted yet. `known_pii` is accepted for the redaction deny-list to come.
     pdf_bytes = fetch_resume(request.s3_key)
-    extracted_text = extract_text(pdf_bytes)
+    try:
+        extracted_text = extract_resume_text(pdf_bytes)
+    except ExtractionError as e:
+        logger.info("analysis rejected correlation_id=%s error_code=%s", request.correlation_id, e.error_code)
+        return error_response(422, request.correlation_id, e.error_code, retryable=False)
     scores, issues = analyze_text(extracted_text)
     # Never log Resume text, raw or redacted.
     logger.info(
