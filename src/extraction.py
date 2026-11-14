@@ -22,7 +22,7 @@ def extract_text(pdf_bytes: bytes) -> str:
         return "\n".join(page.extract_text() or "" for page in pdf.pages)
 
 
-def extract_resume_text(pdf_bytes: bytes) -> str:
+def extract_resume_text(pdf_bytes: bytes, correlation_id: str) -> str:
     """The text for an Analysis, or an ExtractionError.
 
     pdfplumber reads the text layer only; there is no OCR. Job comparison keeps
@@ -33,7 +33,7 @@ def extract_resume_text(pdf_bytes: bytes) -> str:
     except Exception as e:
         # The library raises many unrelated types on malformed files. Class
         # name only: messages can carry file content.
-        logger.warning("resume unreadable error=%s", type(e).__name__)
+        logger.warning("resume unreadable correlation_id=%s error=%s", correlation_id, type(e).__name__)
         raise ExtractionError(FILE_UNREADABLE) from None
 
     if sum(1 for ch in text if not ch.isspace()) < EXTRACTION_MIN_CHARS:

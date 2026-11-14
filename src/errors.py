@@ -19,6 +19,9 @@ class ErrorEnvelope(BaseModel):
 class ExtractionError(Exception):
     """The Resume can't yield text. Never retryable: the same file fails again."""
 
+    status_code = 422
+    retryable = False
+
     def __init__(self, error_code: str):
         super().__init__(error_code)
         self.error_code = error_code

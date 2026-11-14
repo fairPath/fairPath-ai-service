@@ -46,10 +46,10 @@ def resume_endpoint(
     # redacted yet. `known_pii` is accepted for the redaction deny-list to come.
     pdf_bytes = fetch_resume(request.s3_key)
     try:
-        extracted_text = extract_resume_text(pdf_bytes)
+        extracted_text = extract_resume_text(pdf_bytes, request.correlation_id)
     except ExtractionError as e:
         logger.info("analysis rejected correlation_id=%s error_code=%s", request.correlation_id, e.error_code)
-        return error_response(422, request.correlation_id, e.error_code, retryable=False)
+        return error_response(e.status_code, request.correlation_id, e.error_code, e.retryable)
     scores, issues = analyze_text(extracted_text)
     # Never log Resume text, raw or redacted.
     logger.info(

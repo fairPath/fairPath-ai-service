@@ -55,6 +55,16 @@ def test_unextractable_file_returns_422_envelope(client, auth, pdf_store, pdf, e
     }
 
 
+def test_unreadable_file_log_line_carries_the_correlation_id(client, auth, pdf_store, caplog):
+    pdf_store["resumes/x.pdf"] = b"%PDF-1.4 this is not really a pdf"
+    caplog.set_level("INFO")
+
+    client.post("/resume", json=BODY, headers=auth)
+
+    unreadable = [r.getMessage() for r in caplog.records if "unreadable" in r.getMessage()]
+    assert unreadable and all("correlation_id=c-9" in line for line in unreadable)
+
+
 def test_floor_comes_from_config(client, auth, pdf_store, monkeypatch):
     pdf_store["resumes/x.pdf"] = short_pdf()
     monkeypatch.setattr(extraction, "EXTRACTION_MIN_CHARS", 5)
