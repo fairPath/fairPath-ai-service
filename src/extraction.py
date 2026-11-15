@@ -12,9 +12,31 @@ logging.getLogger("pdfminer").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_EXTRACTION_MIN_CHARS = 200
+
+
+def read_min_chars(raw: str | None) -> int:
+    """The extraction floor from the environment.
+
+    Unset or blank means the default: `cp .env.example .env` leaves
+    `EXTRACTION_MIN_CHARS=` blank, and os.environ.get's default only covers an
+    absent variable. Anything else must be a positive whole number, or the app
+    stops at startup naming the variable.
+    """
+    if raw is None or not raw.strip():
+        return DEFAULT_EXTRACTION_MIN_CHARS
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ValueError(f"EXTRACTION_MIN_CHARS must be a whole number, got {raw!r}") from None
+    if value <= 0:
+        raise ValueError(f"EXTRACTION_MIN_CHARS must be positive, got {value}")
+    return value
+
+
 # Fewer non-whitespace characters than this means there is no text layer worth
 # analysing (an image-only scan, or a near-empty file). Tuned on extraction fixtures.
-EXTRACTION_MIN_CHARS = int(os.environ.get("EXTRACTION_MIN_CHARS", "200"))
+EXTRACTION_MIN_CHARS = read_min_chars(os.environ.get("EXTRACTION_MIN_CHARS"))
 
 
 def extract_text(pdf_bytes: bytes) -> str:
