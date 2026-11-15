@@ -2,7 +2,7 @@ from typing import Callable
 from uuid import UUID
 import logging
 from botocore.exceptions import ClientError, BotoCoreError
-from openai import APIStatusError, APITimeoutError, APIConnectionError
+from ai_errors import call_ai
 from comparison_errors import ComparisonError, ComparisonRoute
 
 from fastapi import APIRouter, Depends
@@ -73,27 +73,12 @@ def job_comparison_endpoint(
     except ExtractionError:
         raise ComparisonError(422, "RESUME_UNREADABLE", False) from None
 
-    try:
-        redacted_text = redact_pii(resume_text)
-        result = llm.analyze(
-            COMPARISON_SYSTEM_PROMPT,
-            f"Resume:\n{redacted_text}\n\nJob description:\n{request.job_description}",
-            JobComparisonResult,
-        )
-    except APITimeoutError:
-        raise ComparisonError(504, "AI_TIMED_OUT", True) from None
-    except APIConnectionError:
-        raise ComparisonError(503, "AI_UNAVAILABLE", True) from None
-    except APIStatusError as error:
-        if error.status_code in (401, 403):
-            raise ComparisonError(502, "AI_CONFIGURATION_ERROR", False) from None
-        if error.status_code == 429:
-            raise ComparisonError(503, "UPSTREAM_RATE_LIMITED", True) from None
-        if error.status_code >= 500:
-            raise ComparisonError(503, "AI_UNAVAILABLE", True) from None
-        raise ComparisonError(502, "INVALID_COMPARISON_REQUEST", False) from None
-    except ValueError:
-        raise ComparisonError(502, "INVALID_AI_RESPONSE", False) from None
+    redacted_text = redact_pii(resume_text)
+    result = call_ai(
+        llm, COMPARISON_SYSTEM_PROMPT,
+        f"Resume:\n{redacted_text}\n\nJob description:\n{request.job_description}",
+        JobComparisonResult, invalid_request_code="INVALID_COMPARISON_REQUEST",
+    )
     logger.info(
         "comparison completed correlation_id=%s", request.correlation_id,
     )

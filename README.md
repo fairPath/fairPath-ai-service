@@ -50,3 +50,12 @@ Endpoint tests drive `POST /resume` through FastAPI's test client with the S3 fe
 Model requests use `store=False`. Comparisons distinguish terminal input/configuration errors from transient provider/network failures. Spring persists the error code and retryability; user JWT failures and internal AI-token failures remain separate.
 
 Provider configuration is required at startup: set OPENAI_MODEL, OPENAI_BASE_URL and OPENAI_API_KEY explicitly (use the local provider URL/model and its dummy key for local development). OPENAI_TIMEOUT_SECONDS is optional and defaults to 90. The SDK does not retry internally; Spring owns the bounded comparison retries.
+
+
+AI endpoints reuse `ai_errors.call_ai` and `AiErrorRoute` for provider-error classification
+and safe correlated responses. Features supply request content and a success schema;
+the comparison route only specializes its existing validation error code. The shared
+`errors.error_response` forwards validated `Retry-After` seconds or HTTP dates on retryable
+failures, including provider rate limits and server failures. Other provider headers and
+raw error text are not forwarded. Spring schedules the later of its configured backoff
+and this waiting period; attempt limits and error classifications are unchanged.
