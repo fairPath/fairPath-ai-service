@@ -69,3 +69,11 @@ Missing a preferred framework alone should not make an otherwise relevant softwa
 engineer a single-digit match. Material specialization and seniority gaps still count.
 These anchors guide the model; they have not been calibrated against real hiring outcomes.
 Existing saved scores change only when the user explicitly runs another match check.
+
+AI endpoints reuse `ai_errors.call_ai` and `AiErrorRoute` for provider-error classification
+and safe correlated responses. Features supply request content and a success schema;
+the comparison route only specializes its existing validation error code. The shared
+`errors.error_response` forwards validated `Retry-After` seconds or HTTP dates on retryable
+failures, including provider rate limits and server failures. Other provider headers and
+raw error text are not forwarded. Spring schedules the later of its configured backoff
+and this waiting period; attempt limits and error classifications are unchanged.
