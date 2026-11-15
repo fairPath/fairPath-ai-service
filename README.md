@@ -50,3 +50,22 @@ Endpoint tests drive `POST /resume` through FastAPI's test client with the S3 fe
 Model requests use `store=False`. Comparisons distinguish terminal input/configuration errors from transient provider/network failures. Spring persists the error code and retryability; user JWT failures and internal AI-token failures remain separate.
 
 Provider configuration is required at startup: set OPENAI_MODEL, OPENAI_BASE_URL and OPENAI_API_KEY explicitly (use the local provider URL/model and its dummy key for local development). OPENAI_TIMEOUT_SECONDS is optional and defaults to 90. The SDK does not retry internally; Spring owns the bounded comparison retries.
+
+## Job match score
+
+Comparison rubric 0.3.0 rates how competitive the resume's demonstrated experience is
+for the supplied role; it is not a calibrated probability of being hired.
+The rubric credits transferable engineering experience, distinguishes essential from
+preferred requirements, and accounts for the limited evidence in short job snippets.
+It returns skill match and relevant experience match scores. The service computes the total
+from a 50/50 weighted average, rounded half up. It also returns resume advice limited
+to two sentences and 400 characters, based on truthful evidence in the supplied resume.
+Weights, advice limits and score bands live in
+`src/job_comparison_config.py`; bump the comparison rubric version when they or the prompt change.
+
+Scores of 75–89 indicate a strong candidate, 60–74 a credible candidate, 40–59 a stretch,
+20–39 a weak fit, and 0–19 a largely unrelated background; 90–100 is exceptional fit.
+Missing a preferred framework alone should not make an otherwise relevant software
+engineer a single-digit match. Material specialization and seniority gaps still count.
+These anchors guide the model; they have not been calibrated against real hiring outcomes.
+Existing saved scores change only when the user explicitly runs another match check.
