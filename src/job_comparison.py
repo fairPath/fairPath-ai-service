@@ -1,17 +1,25 @@
 from typing import Callable
+from uuid import UUID
+import logging
+from botocore.exceptions import ClientError, BotoCoreError
+from openai import APIStatusError, APITimeoutError, APIConnectionError
+from comparison_errors import ComparisonError, ComparisonRoute
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from extraction import extract_text
+from extraction import extract_resume_text
+from errors import ExtractionError
 from llm import LLMGateway, get_llm
 from redaction import redact_pii
 from resume import get_resume_fetcher, verify_internal_token
 
-router = APIRouter(dependencies=[Depends(verify_internal_token)])
+router = APIRouter(dependencies=[Depends(verify_internal_token)], route_class=ComparisonRoute)
+logger = logging.getLogger(__name__)
 
 
 class JobComparisonRequest(BaseModel):
+    correlation_id: UUID
     job_id: str = Field(min_length=1, max_length=200)
     s3_key: str = Field(min_length=1, max_length=1024)
     job_description: str = Field(min_length=1)
@@ -26,6 +34,7 @@ class JobComparisonResult(BaseModel):
 
 
 class JobComparisonResponse(JobComparisonResult):
+    correlation_id: UUID
     model: str
 
 
@@ -47,19 +56,48 @@ def job_comparison_endpoint(
     llm: LLMGateway = Depends(get_llm),
     fetch_resume: Callable[[str], bytes] = Depends(get_resume_fetcher),
 ):
-    # Synchronous S3/PDF/model work runs in FastAPI's thread pool.
-    pdf_bytes = fetch_resume(request.s3_key)
-    resume_text = extract_text(pdf_bytes)
-    if not resume_text.strip():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="No text could be extracted from this PDF",
-        )
+    try:
+        pdf_bytes = fetch_resume(request.s3_key)
+    except ClientError as error:
+        code = error.response.get("Error", {}).get("Code", "")
+        if code in ("NoSuchKey", "NoSuchBucket", "404"):
+            raise ComparisonError(422, "RESUME_UNAVAILABLE", False) from None
+        if code in ("AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch"):
+            raise ComparisonError(502, "STORAGE_CONFIGURATION_ERROR", False) from None
+        raise ComparisonError(503, "AI_UNAVAILABLE", True) from None
+    except BotoCoreError:
+        raise ComparisonError(503, "AI_UNAVAILABLE", True) from None
 
-    redacted_text = redact_pii(resume_text)
-    result = llm.analyze(
-        COMPARISON_SYSTEM_PROMPT,
-        f"Resume:\n{redacted_text}\n\nJob description:\n{request.job_description}",
-        JobComparisonResult,
+    try:
+        resume_text = extract_resume_text(pdf_bytes, str(request.correlation_id))
+    except ExtractionError:
+        raise ComparisonError(422, "RESUME_UNREADABLE", False) from None
+
+    try:
+        redacted_text = redact_pii(resume_text)
+        result = llm.analyze(
+            COMPARISON_SYSTEM_PROMPT,
+            f"Resume:\n{redacted_text}\n\nJob description:\n{request.job_description}",
+            JobComparisonResult,
+        )
+    except APITimeoutError:
+        raise ComparisonError(504, "AI_TIMED_OUT", True) from None
+    except APIConnectionError:
+        raise ComparisonError(503, "AI_UNAVAILABLE", True) from None
+    except APIStatusError as error:
+        if error.status_code in (401, 403):
+            raise ComparisonError(502, "AI_CONFIGURATION_ERROR", False) from None
+        if error.status_code == 429:
+            raise ComparisonError(503, "UPSTREAM_RATE_LIMITED", True) from None
+        if error.status_code >= 500:
+            raise ComparisonError(503, "AI_UNAVAILABLE", True) from None
+        raise ComparisonError(502, "INVALID_COMPARISON_REQUEST", False) from None
+    except ValueError:
+        raise ComparisonError(502, "INVALID_AI_RESPONSE", False) from None
+    logger.info(
+        "comparison completed correlation_id=%s", request.correlation_id,
     )
-    return JobComparisonResponse(**result.model_dump(), model=llm.model)
+    return JobComparisonResponse(
+        **result.model_dump(),
+        model=llm.model, correlation_id=request.correlation_id
+    )
