@@ -43,14 +43,41 @@ def test_date_ranges_and_years_are_not_mistaken_for_a_phone():
     assert check_missing_contact(document_from_text(text)).value == 0
 
 
-# Known gap: PHONE_PATTERN is deliberately NANP (US/Canada) only for now.
-# A resume whose only contact is a non-US number gets a false MISSING_CONTACT.
-# Flip this (and widen PHONE_PATTERN) when international support is added.
-@pytest.mark.xfail(reason="international phone formats not supported yet", strict=True)
 @pytest.mark.parametrize(
     "phone",
-    ["+44 20 7946 0958", "+61 2 9374 4000", "+33 1 42 68 53 00"],
-    ids=["uk", "au", "fr"],
+    [
+        "+44 20 7946 0958",
+        "+61 2 9374 4000",
+        "+33 1 42 68 53 00",
+        "+49 30 12345678",
+        "+91 98765 43210",
+        "07911 123456",
+        "555–010–1234",  # en dash, common in PDF extraction
+        "555—010—1234",  # em dash
+    ],
+    ids=["uk", "au", "fr", "de", "in", "uk-local", "en-dash", "em-dash"],
 )
-def test_non_us_phone_is_recognized(phone):
+def test_non_us_phone_and_dash_separators_are_recognized(phone):
     assert check_missing_contact(document_from_text(f"Jane Testperson | {phone}\n{BODY}")).value == 1
+
+
+@pytest.mark.parametrize(
+    "email",
+    ["jane@example.com", "jane.t+jobs@mail.example.co.uk", "jane_t@sub-domain.example.org"],
+)
+def test_common_email_forms_are_recognized(email):
+    assert check_missing_contact(document_from_text(f"Jane Testperson | {email}\n{BODY}")).value == 1
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Built it with version 1.2@3.4 of the tool",
+        "Acme 2018 - 2020 - 2022",  # a run of years is not a phone
+        "Years: 2019 2020 2021",
+        "Order 12345678",  # too few digits to be a phone with separators absent
+    ],
+    ids=["version-number", "year-run-dashes", "year-run-spaces", "short-digits"],
+)
+def test_lookalikes_are_not_contact_details(text):
+    assert check_missing_contact(document_from_text(f"Jane Testperson\n{text}\n{BODY}")).value == 0
