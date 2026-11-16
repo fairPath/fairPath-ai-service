@@ -9,7 +9,7 @@ from conftest import make_pdf
 
 def test_comparison_uses_gateway_and_updates_result(client, auth, fake_llm):
     fake_llm.result = job_comparison.JobComparisonResult(
-        match_score=85,
+        skill_match_score=90, experience_match_score=80, resume_advice="Highlight your relevant Python projects.",
         matched_skills=["Python"],
         missing_skills=["Java"],
         relevant_experience="Software engineering experience",
@@ -22,6 +22,9 @@ def test_comparison_uses_gateway_and_updates_result(client, auth, fake_llm):
     )
     assert response.status_code == 200
     assert response.json()["match_score"] == 85
+    assert response.json()["skill_match_score"] == 90
+    assert response.json()["experience_match_score"] == 80
+    assert response.json()["resume_advice"] == "Highlight your relevant Python projects."
     assert response.json()["model"] == "fake-model"
     assert response.json()["correlation_id"] == CORRELATION_ID
     assert len(fake_llm.calls) == 1
@@ -66,7 +69,7 @@ def test_model_failure_returns_error_for_worker_retry(client, auth, fake_llm):
 
 def test_full_description_including_final_segment_reaches_model(client, auth, fake_llm):
     fake_llm.result = job_comparison.JobComparisonResult(
-        match_score=85, matched_skills=[], missing_skills=[], relevant_experience="", other_gaps=[]
+        skill_match_score=90, experience_match_score=80, resume_advice="Highlight your relevant Python projects.", matched_skills=[], missing_skills=[], relevant_experience="", other_gaps=[]
     )
     description = "A" * 255 + "B" * 252 + "C" * 1000 + " FINAL_REQUIREMENT"
     response = client.post(
@@ -132,7 +135,7 @@ def test_model_requests_disable_provider_storage():
     from unittest.mock import Mock
     from llm import LLMGateway
     result = job_comparison.JobComparisonResult(
-        match_score=80, matched_skills=[], missing_skills=[], relevant_experience="", other_gaps=[]
+        skill_match_score=80, experience_match_score=80, resume_advice="Highlight your relevant projects.", matched_skills=[], missing_skills=[], relevant_experience="", other_gaps=[]
     )
     parse = Mock(return_value=SimpleNamespace(output_parsed=result))
     gateway = LLMGateway.__new__(LLMGateway)
@@ -163,3 +166,33 @@ def test_short_text_uses_the_shared_extraction_floor(client, auth, pdf_store, fa
     assert response.json()["error_code"] == "RESUME_UNREADABLE"
     assert response.json()["retryable"] is False
     assert not fake_llm.calls
+
+
+@pytest.mark.parametrize("skills,experience,total", [(0, 0, 0), (100, 100, 100), (80, 91, 86)])
+def test_total_is_computed_from_component_scores(client, auth, fake_llm, skills, experience, total):
+    fake_llm.result = job_comparison.JobComparisonResult(
+        skill_match_score=skills, experience_match_score=experience,
+        resume_advice="Highlight your relevant projects. Clarify your demonstrated impact.",
+        matched_skills=[], missing_skills=[], relevant_experience="Synthetic experience", other_gaps=[],
+    )
+    response = client.post("/job-comparison", headers=auth, json={
+        "correlation_id": CORRELATION_ID, "job_id": "job", "s3_key": "resumes/ok.pdf",
+        "job_description": "Python",
+    })
+    assert response.status_code == 200
+    assert response.json()["match_score"] == total
+
+
+@pytest.mark.parametrize("changes", [
+    {"skill_match_score": -1}, {"experience_match_score": 101}, {"skill_match_score": 80.5},
+    {"resume_advice": "Highlight projects. Clarify impact. Add examples."},
+    {"resume_advice": 'Highlight projects. Clarify impact! "Add examples."'},
+    {"resume_advice": " "}, {"resume_advice": "A" * 401},
+])
+def test_invalid_scores_or_excessive_advice_are_rejected(changes):
+    from pydantic import ValidationError
+    fields = dict(skill_match_score=80, experience_match_score=90,
+                  resume_advice="Highlight your relevant projects.", matched_skills=[],
+                  missing_skills=[], relevant_experience="Synthetic experience", other_gaps=[])
+    with pytest.raises(ValidationError):
+        job_comparison.JobComparisonResult(**(fields | changes))
