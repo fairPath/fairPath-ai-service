@@ -8,7 +8,7 @@ FastAPI service for resume analysis and job comparison. It is stateless with res
   - Request: `{ correlation_id, s3_key, known_pii: { full_name, email, phone } }` (each `known_pii` field nullable; deny-list only).
   - Response: `{ correlation_id, scores: { formatting, parseability, writing, overall }, issues: [IssueDetail], model, pipeline_version }`. Models live in `src/contract.py`.
   - Fetches the PDF from S3 by key, extracts the text, runs the Checks (`src/checks.py`) and the Scorer (`src/scorer.py`). Weights, Issue types and `pipeline_version` are in `src/analysis_config.py`; bump `PIPELINE_VERSION` on any change to prompt, rubric, Checks, weights or model.
-  - Walking skeleton: only the `MISSING_CONTACT` Check runs and no LLM call is made, so `model` is `null`. A Category with no components yet scores 100. The redactor and the LLM gateway (`src/redaction.py`, `src/llm.py`) are kept for the slices that add the first LLM call.
+  - Walking skeleton: only the simple Checks run (`MISSING_CONTACT`, `TOO_LONG`, `INCONSISTENT_DATES`, `UNREADABLE_CHARACTERS`, `MISSING_SECTION`) and no LLM call is made, so `model` is `null`. Each Check reads an `ExtractedDocument` (text and page count); their thresholds are in `src/analysis_config.py`. A Category with no components yet scores 100. The redactor and the LLM gateway (`src/redaction.py`, `src/llm.py`) are kept for the slices that add the first LLM call.
   - Never logs Resume text; only the `correlation_id` and counts.
 - `POST /job-comparison` — fetches an immutable resume snapshot from S3, extracts and redacts its text with Presidio, and returns a structured resume-versus-job comparison. Requires `X-Internal-Token`. Scanned PDFs without extractable text return HTTP 422.
 - `GET /health` — health check.

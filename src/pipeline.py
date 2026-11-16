@@ -2,12 +2,26 @@
 from collections import defaultdict
 
 from analysis_config import ISSUE_ID_PREFIX, ISSUE_TYPES
-from checks import Check, CheckIssue, check_missing_contact
+from checks import (
+    Check,
+    CheckIssue,
+    check_inconsistent_dates,
+    check_missing_contact,
+    check_missing_section,
+    check_too_long,
+    check_unreadable_characters,
+)
 from contract import IssueDetail, Scores
 from extraction import ExtractedDocument
 from scorer import score
 
-CHECKS: list[Check] = [check_missing_contact]
+CHECKS: list[Check] = [
+    check_missing_contact,
+    check_too_long,
+    check_inconsistent_dates,
+    check_unreadable_characters,
+    check_missing_section,
+]
 
 
 def analyze_document(doc: ExtractedDocument) -> tuple[Scores, list[IssueDetail]]:
