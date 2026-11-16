@@ -1,17 +1,17 @@
-"""The Analysis pipeline: Checks on the Extracted text, then the Scorer."""
+"""The Analysis pipeline: Checks on the Extracted document, then the Scorer."""
 from collections import defaultdict
-from collections.abc import Callable
 
 from analysis_config import ISSUE_ID_PREFIX, ISSUE_TYPES
-from checks import CheckIssue, CheckResult, check_missing_contact
+from checks import Check, CheckIssue, check_missing_contact
 from contract import IssueDetail, Scores
+from extraction import ExtractedDocument
 from scorer import score
 
-CHECKS: list[Callable[[str], CheckResult]] = [check_missing_contact]
+CHECKS: list[Check] = [check_missing_contact]
 
 
-def analyze_text(text: str) -> tuple[Scores, list[IssueDetail]]:
-    results = [check(text) for check in CHECKS]
+def analyze_document(doc: ExtractedDocument) -> tuple[Scores, list[IssueDetail]]:
+    results = [check(doc) for check in CHECKS]
     scores = score({result.component: result.value for result in results})
     issues = _to_issue_details([issue for result in results for issue in result.issues])
     return scores, issues

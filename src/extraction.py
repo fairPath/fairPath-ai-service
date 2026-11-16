@@ -1,6 +1,7 @@
 import io
 import logging
 import os
+from dataclasses import dataclass
 
 import pdfplumber
 
@@ -39,25 +40,44 @@ def read_min_chars(raw: str | None) -> int:
 EXTRACTION_MIN_CHARS = read_min_chars(os.environ.get("EXTRACTION_MIN_CHARS"))
 
 
+@dataclass(frozen=True)
+class ExtractedDocument:
+    """What the Checks read: the Extracted text and the page count. Plain data,
+    so a test can build one without a PDF."""
+
+    text: str
+    page_count: int
+
+
 def extract_text(pdf_bytes: bytes) -> str:
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         return "\n".join(page.extract_text() or "" for page in pdf.pages)
 
 
-def extract_resume_text(pdf_bytes: bytes, correlation_id: str) -> str:
-    """The text for an Analysis, or an ExtractionError.
+def _read_document(pdf_bytes: bytes) -> ExtractedDocument:
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+        return ExtractedDocument(text=text, page_count=len(pdf.pages))
 
-    pdfplumber reads the text layer only; there is no OCR. Job comparison keeps
-    using extract_text and its own blank check.
+
+def extract_resume_document(pdf_bytes: bytes, correlation_id: str) -> ExtractedDocument:
+    """The Extracted text and page count for an Analysis, or an ExtractionError.
+
+    pdfplumber reads the text layer only; there is no OCR.
     """
     try:
-        text = extract_text(pdf_bytes)
+        document = _read_document(pdf_bytes)
     except Exception as e:
         # The library raises many unrelated types on malformed files. Class
         # name only: messages can carry file content.
         logger.warning("resume unreadable correlation_id=%s error=%s", correlation_id, type(e).__name__)
         raise ExtractionError(FILE_UNREADABLE) from None
 
-    if sum(1 for ch in text if not ch.isspace()) < EXTRACTION_MIN_CHARS:
+    if sum(1 for ch in document.text if not ch.isspace()) < EXTRACTION_MIN_CHARS:
         raise ExtractionError(TEXT_NOT_EXTRACTABLE)
-    return text
+    return document
+
+
+def extract_resume_text(pdf_bytes: bytes, correlation_id: str) -> str:
+    """The text alone, for callers that don't need the page count."""
+    return extract_resume_document(pdf_bytes, correlation_id).text

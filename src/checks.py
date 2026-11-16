@@ -1,6 +1,9 @@
 """Deterministic Checks. They run on the Extracted text, never on Redacted text."""
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
+
+from extraction import ExtractedDocument
 
 
 @dataclass(frozen=True)
@@ -36,9 +39,13 @@ PHONE_PATTERN = re.compile(
 )
 
 
-def check_missing_contact(text: str) -> CheckResult:
+# Every Check reads the same document, whether it needs the text, the page count or both.
+Check = Callable[[ExtractedDocument], CheckResult]
+
+
+def check_missing_contact(doc: ExtractedDocument) -> CheckResult:
     """Presence Check: fails only when neither an email nor a phone is found."""
-    if EMAIL_PATTERN.search(text) or PHONE_PATTERN.search(text):
+    if EMAIL_PATTERN.search(doc.text) or PHONE_PATTERN.search(doc.text):
         return CheckResult(component="missing_contact", value=1)
     return CheckResult(
         component="missing_contact",

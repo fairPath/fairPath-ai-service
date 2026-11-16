@@ -2,6 +2,7 @@
 import pytest
 
 from checks import check_missing_contact
+from conftest import document_from_text
 
 BODY = "EXPERIENCE\nSoftware Engineer, Acme Widgets 2020 - 2024\n- Built an internal tool.\n"
 
@@ -18,7 +19,7 @@ BODY = "EXPERIENCE\nSoftware Engineer, Acme Widgets 2020 - 2024\n- Built an inte
     ids=["both", "email-only", "phone-parens", "phone-intl-dots", "phone-spaces"],
 )
 def test_passes_when_an_email_or_a_phone_is_present(header):
-    result = check_missing_contact(f"{header}\n{BODY}")
+    result = check_missing_contact(document_from_text(f"{header}\n{BODY}"))
 
     assert result.component == "missing_contact"
     assert result.value == 1
@@ -26,7 +27,7 @@ def test_passes_when_an_email_or_a_phone_is_present(header):
 
 
 def test_fails_when_neither_email_nor_phone_is_present():
-    result = check_missing_contact(f"Jane Testperson | Springfield\n{BODY}")
+    result = check_missing_contact(document_from_text(f"Jane Testperson | Springfield\n{BODY}"))
 
     assert result.value == 0
     assert len(result.issues) == 1
@@ -39,7 +40,7 @@ def test_fails_when_neither_email_nor_phone_is_present():
 def test_date_ranges_and_years_are_not_mistaken_for_a_phone():
     text = "Jane Testperson\nEXPERIENCE\nAcme 2019 - 2020, 2021-2024\nZIP 12345\n"
 
-    assert check_missing_contact(text).value == 0
+    assert check_missing_contact(document_from_text(text)).value == 0
 
 
 # Known gap: PHONE_PATTERN is deliberately NANP (US/Canada) only for now.
@@ -52,4 +53,4 @@ def test_date_ranges_and_years_are_not_mistaken_for_a_phone():
     ids=["uk", "au", "fr"],
 )
 def test_non_us_phone_is_recognized(phone):
-    assert check_missing_contact(f"Jane Testperson | {phone}\n{BODY}").value == 1
+    assert check_missing_contact(document_from_text(f"Jane Testperson | {phone}\n{BODY}")).value == 1
