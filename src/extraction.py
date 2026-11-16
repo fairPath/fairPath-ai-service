@@ -45,10 +45,9 @@ def extract_text(pdf_bytes: bytes) -> str:
 
 
 def extract_resume_text(pdf_bytes: bytes, correlation_id: str) -> str:
-    """The text for an Analysis, or an ExtractionError.
+    """Extract resume text for Analysis or comparison, or raise ExtractionError.
 
-    pdfplumber reads the text layer only; there is no OCR. Job comparison keeps
-    using extract_text and its own blank check.
+    pdfplumber reads the text layer only; there is no OCR.
     """
     try:
         text = extract_text(pdf_bytes)
