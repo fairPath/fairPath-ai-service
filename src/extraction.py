@@ -79,5 +79,5 @@ def extract_resume_document(pdf_bytes: bytes, correlation_id: str) -> ExtractedD
 
 
 def extract_resume_text(pdf_bytes: bytes, correlation_id: str) -> str:
-    """The text alone, for callers that don't need the page count."""
+    """The text alone, for Analysis or comparison callers that don't need the page count."""
     return extract_resume_document(pdf_bytes, correlation_id).text

@@ -10,7 +10,7 @@ FastAPI service for resume analysis and job comparison. It is stateless with res
   - Fetches the PDF from S3 by key, extracts the text, runs the Checks (`src/checks.py`) and the Scorer (`src/scorer.py`). Weights, Issue types and `pipeline_version` are in `src/analysis_config.py`; bump `PIPELINE_VERSION` on any change to prompt, rubric, Checks, weights or model.
   - Walking skeleton: only the simple Checks run (`MISSING_CONTACT`, `TOO_LONG`, `INCONSISTENT_DATES`, `UNREADABLE_CHARACTERS`, `MISSING_SECTION`) and no LLM call is made, so `model` is `null`. Each Check reads an `ExtractedDocument` (text and page count); their thresholds are in `src/analysis_config.py`. A Category with no components yet scores 100. The redactor and the LLM gateway (`src/redaction.py`, `src/llm.py`) are kept for the slices that add the first LLM call.
   - Never logs Resume text; only the `correlation_id` and counts.
-- `POST /job-comparison` — fetches an immutable resume snapshot from S3, extracts and redacts its text with Presidio, and returns a structured resume-versus-job comparison. Requires `X-Internal-Token`. Scanned PDFs without extractable text return HTTP 422.
+- `POST /job-comparison` — fetches the latest active resume from its live S3 key, extracts and redacts its text with Presidio, and returns a structured resume-versus-job comparison. Requires `X-Internal-Token`. Scanned PDFs without extractable text return HTTP 422.
 - `GET /health` — health check.
 
 ## Running locally
@@ -28,7 +28,7 @@ See `.env.example`. `OPENAI_BASE_URL`/`OPENAI_MODEL` can point at LM Studio in d
 
 ## Background comparisons
 
-The AI service's API is unchanged. Configure the backend's `FAIRPATH_AI_SERVICE_URL` and `FAIRPATH_AI_INTERNAL_TOKEN` (matching this service's `INTERNAL_TOKEN`). No additional worker process is needed. See the backend README for recovery and retry behavior.
+Comparison requests include a UUID `correlation_id`, echoed in success and in safe error envelopes `{correlation_id, error_code, retryable}`. Deploy with the companion explicit-comparison backend/frontend changes. Configure the backend's `FAIRPATH_AI_SERVICE_URL` and `FAIRPATH_AI_INTERNAL_TOKEN` (matching this service's `INTERNAL_TOKEN`). No additional worker process is needed. See the backend README for recovery and retry behavior.
 
 ## Deployment
 
@@ -46,3 +46,36 @@ pytest
 ```
 
 Endpoint tests drive `POST /resume` through FastAPI's test client with the S3 fetch (`storage.py`) faked via a dependency override; the Scorer and the Checks also have pure unit tests. They use synthetic PDFs generated at test time; no real resume data belongs in this repo.
+
+Model requests use `store=False`. Comparisons distinguish terminal input/configuration errors from transient provider/network failures. Spring persists the error code and retryability; user JWT failures and internal AI-token failures remain separate.
+
+Provider configuration is required at startup: set OPENAI_MODEL, OPENAI_BASE_URL and OPENAI_API_KEY explicitly (use the local provider URL/model and its dummy key for local development). OPENAI_TIMEOUT_SECONDS is optional and defaults to 90. The SDK does not retry internally; Spring owns the shared original Analysis retry policy.
+
+## Job match score
+
+Comparison rubric 0.3.0 rates how competitive the resume's demonstrated experience is
+for the supplied role; it is not a calibrated probability of being hired.
+The rubric credits transferable engineering experience, distinguishes essential from
+preferred requirements, and accounts for the limited evidence in short job snippets.
+It returns skill match and relevant experience match scores. The service computes the total
+from a 50/50 weighted average, rounded half up. It also returns resume advice limited
+to two sentences and 400 characters, based on truthful evidence in the supplied resume.
+Weights, advice limits and score bands live in
+`src/job_comparison_config.py`; bump the comparison rubric version when they or the prompt change.
+
+Scores of 75–89 indicate a strong candidate, 60–74 a credible candidate, 40–59 a stretch,
+20–39 a weak fit, and 0–19 a largely unrelated background; 90–100 is exceptional fit.
+Missing a preferred framework alone should not make an otherwise relevant software
+engineer a single-digit match. Material specialization and seniority gaps still count.
+These anchors guide the model; they have not been calibrated against real hiring outcomes.
+Existing saved scores change only when the user explicitly runs another match check.
+
+AI endpoints reuse `ai_errors.call_ai` and `AiErrorRoute` for provider-error classification
+and safe correlated responses. Features supply request content and a success schema;
+the comparison route only specializes its existing validation error code. The shared
+`errors.error_response` forwards validated `Retry-After` seconds or HTTP dates on retryable
+failures, including provider rate limits and server failures. Other provider headers and
+raw error text are not forwarded. The metadata remains available to callers. Spring currently restores Analysis's original
+policy for both features: one automatic retry after five seconds only for connection
+refusal or untyped 503, without extending the delay using Retry-After. Typed rate-limit
+errors permit a manual retry according to the shared stored-code rule.
