@@ -19,6 +19,12 @@ Always reuse the files below for their listed responsibilities. Import or extend
 | `tests/conftest.py` | Use the existing shared pytest fixtures, `FakeLLM`, `make_pdf`, and synthetic resume data. Add new shared test fixtures here. |
 | `src/ai_errors.py` | Use `AiErrorRoute`, `AiRequestError`, and `call_ai` for AI route error handling and provider failure classification. |
 
+### Compatibility when extending shared files
+
+- Preserve existing behavior for every caller, including function signatures, response shapes, error codes, and retry behavior.
+- Make new parameters optional for existing callers. Use defaults that preserve the previous behavior when a parameter is omitted, sent as JSON `null`, or passed as Python `None`. Account for clients that omit `undefined` values during serialization.
+- Verify existing callers and add regression coverage for omitted and explicit null values when introducing a parameter. Exercise affected API flows and check that downstream callers and pages continue to work without unhandled errors.
+
 ## Done
 
 Done means `pytest` passes, after `pip install -r requirements-dev.txt`.
