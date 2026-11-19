@@ -56,9 +56,32 @@ def test_description_names_the_styles_without_quoting_dates():
     assert "2020" not in issue.description
 
 
-def test_may_fits_either_style():
+def test_may_fits_either_month_name_style():
     assert run("Acme, May 2020 - Jan 2021").value == 1
     assert run("Acme, May 2020 - January 2021").value == 1
+    assert run("Acme, May 2020 - May 2021").value == 1
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [
+        ("Acme, May 2020 - 03/2021",),
+        ("Acme, May 2020 - 2021-03",),
+        ("Acme, May 2020", "Beta, 2021-06"),
+    ],
+    ids=["may-vs-numeric", "may-vs-iso", "may-alone-vs-iso"],
+)
+def test_may_does_not_fit_numeric_or_iso_dates(lines):
+    result = run(*lines)
+
+    assert result.value == 0
+    assert "month names" in result.issues[0].description
+    assert "2020" not in result.issues[0].description
+
+
+def test_may_cannot_bridge_two_named_styles():
+    # Jan is abbreviated and January is full; May fits both but joins neither.
+    assert run("Acme, Jan 2020 - May 2020 - January 2021").value == 0
 
 
 def test_year_only_dates_are_ignored():

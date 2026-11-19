@@ -127,38 +127,42 @@ _ISO_DATE = re.compile(r"(?<![\d-])(?:19|20)\d{2}-(?:0[1-9]|1[0-2])(?![\d-])")
 _DATE_STYLE_LABELS = {
     "full": "full month names",
     "abbreviated": "abbreviated month names",
+    "month_name": "month names",  # only "May", which is both full and abbreviated
     "numeric": "numeric dates (MM/YYYY)",
     "iso": "YYYY-MM dates",
 }
+_MONTH_NAME_STYLES = frozenset({"full", "abbreviated"})
 
 
 def check_inconsistent_dates(doc: ExtractedDocument) -> CheckResult:
-    """Presence Check: fails when dates that carry a month use two or more styles.
+    """Presence Check: fails when no single date style fits every date that carries a month.
 
-    Year-only dates and "Present" are ignored. With fewer than two dates that
-    carry a month there is nothing to compare, so the component is not applicable.
+    Each date fits one or more styles: "May" fits full and abbreviated month
+    names, every other date fits exactly one. The dates are consistent when one
+    style fits them all. Year-only dates and "Present" are ignored. With fewer
+    than two dates that carry a month there is nothing to compare, so the
+    component is not applicable.
     """
-    styles: set[str] = set()
-    dates = 0
+    fits: list[frozenset[str]] = []
     for match in _MONTH_NAME_DATE.finditer(doc.text):
         month = match.group(1).lower()
         if month in analysis_config.FULL_MONTHS:
-            styles.add("full")
+            fits.append(frozenset({"full"}))
         elif month in analysis_config.ABBREVIATED_MONTHS:
-            styles.add("abbreviated")
-        elif month != "may":  # "May" fits either style
-            continue
-        dates += 1
+            fits.append(frozenset({"abbreviated"}))
+        elif month == "may":
+            fits.append(_MONTH_NAME_STYLES)
     for style, pattern in (("numeric", _NUMERIC_DATE), ("iso", _ISO_DATE)):
-        found = len(pattern.findall(doc.text))
-        if found:
-            styles.add(style)
-            dates += found
+        fits.extend(frozenset({style}) for _ in pattern.findall(doc.text))
 
+    dates = len(fits)
     if dates < 2:
         return CheckResult(component="inconsistent_dates", value=None)
-    if len(styles) < 2:
+    if frozenset.intersection(*fits):
         return CheckResult(component="inconsistent_dates", value=1)
+    styles = {style for fit in fits if len(fit) == 1 for style in fit}
+    if not styles & _MONTH_NAME_STYLES and any(len(fit) > 1 for fit in fits):
+        styles.add("month_name")
     used = ", ".join(label for style, label in _DATE_STYLE_LABELS.items() if style in styles)
     return CheckResult(
         component="inconsistent_dates",
