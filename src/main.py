@@ -15,11 +15,6 @@ app.include_router(resume_router)
 app.include_router(job_comparison_router)
 
 
-@app.get("/")
-def read_root():
-    return {"message": "fairPath AI Service is running!"}
-
-
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
