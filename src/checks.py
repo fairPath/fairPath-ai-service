@@ -46,15 +46,32 @@ YEAR_PATTERN = re.compile(r"(?:19|20)\d{2}")
 MONTH_PATTERN = re.compile(r"0?[1-9]|1[0-2]")
 
 
+def _is_date_like(group: str) -> bool:
+    return bool(YEAR_PATTERN.fullmatch(group) or MONTH_PATTERN.fullmatch(group))
+
+
 def _is_phone(candidate: str) -> bool:
-    digit_groups = re.findall(r"\d+", candidate)
-    if not PHONE_MIN_DIGITS <= sum(len(group) for group in digit_groups) <= PHONE_MAX_DIGITS:
-        return False
-    # "2018 - 2020 - 2022" and "2020-01 - 2021-03" have enough digits but are
-    # years and months, so a date span: no phone group is only a year or a month.
-    return not all(
-        YEAR_PATTERN.fullmatch(group) or MONTH_PATTERN.fullmatch(group) for group in digit_groups
-    )
+    """True if some run of digit groups inside the candidate looks like a phone.
+
+    Adjacent numbers ("555-010-1234  555-010-5678") arrive as one long
+    candidate, so each contiguous slice of groups is tried. A slice is a phone
+    when it has 10 to 15 digits, is not only years and months ("2018 - 2020",
+    "2020-01 - 2021-03" are date spans) and does not start with a year or month,
+    so "2019 - 2020 2021 12345" (years, then a ZIP) is not a number. A leading
+    country code like "+1" is still found through the slice that follows it.
+    """
+    groups = re.findall(r"\d+", candidate)
+    for start in range(len(groups)):
+        if _is_date_like(groups[start]):
+            continue
+        digits = 0
+        for end in range(start, len(groups)):
+            digits += len(groups[end])
+            if digits > PHONE_MAX_DIGITS:
+                break
+            if digits >= PHONE_MIN_DIGITS and not all(_is_date_like(g) for g in groups[start:end + 1]):
+                return True
+    return False
 
 
 def _has_phone(text: str) -> bool:

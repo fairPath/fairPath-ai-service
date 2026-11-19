@@ -54,10 +54,33 @@ def test_month_year_date_ranges_are_not_mistaken_for_a_phone(span):
     assert check_missing_contact(document_from_text(text)).value == 0
 
 
+@pytest.mark.parametrize(
+    "span",
+    ["Acme 2019 - 2020 2021 12345", "Acme 2020-01 - 2021-03 2022-05 12345"],
+    ids=["years-then-zip", "ranges-then-zip"],
+)
+def test_dates_followed_by_a_zip_are_not_mistaken_for_a_phone(span):
+    assert check_missing_contact(document_from_text(f"Jane Testperson\n{span}\n")).value == 0
+
+
 def test_a_phone_next_to_a_date_range_is_still_found():
     text = "Jane Testperson | 555-010-1234\nEXPERIENCE\nAcme 2020-01 - 2021-03\n"
 
     assert check_missing_contact(document_from_text(text)).value == 1
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Phone 555-010-1234  555-010-5678",
+        "Jane Testperson | 555-010-1234 | 555-010-5678",
+        "555-010-1234 Springfield 12345",
+        "Mobile 555 010 1234 Office 555 010 5678",
+    ],
+    ids=["two-spaced", "two-piped", "phone-then-zip", "two-labelled"],
+)
+def test_adjacent_numbers_are_checked_one_at_a_time(line):
+    assert check_missing_contact(document_from_text(f"Jane Testperson\n{line}\n")).value == 1
 
 
 @pytest.mark.parametrize(
