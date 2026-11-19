@@ -44,6 +44,23 @@ def test_date_ranges_and_years_are_not_mistaken_for_a_phone():
 
 
 @pytest.mark.parametrize(
+    "span",
+    ["Acme 2020-01 - 2021-03", "Acme 01/2020 - 03/2021", "Acme 2019-06 to 2021-11 2022-01"],
+    ids=["iso-range", "numeric-range", "iso-ranges-run-together"],
+)
+def test_month_year_date_ranges_are_not_mistaken_for_a_phone(span):
+    text = f"Jane Testperson\nEXPERIENCE\n{span}\n"
+
+    assert check_missing_contact(document_from_text(text)).value == 0
+
+
+def test_a_phone_next_to_a_date_range_is_still_found():
+    text = "Jane Testperson | 555-010-1234\nEXPERIENCE\nAcme 2020-01 - 2021-03\n"
+
+    assert check_missing_contact(document_from_text(text)).value == 1
+
+
+@pytest.mark.parametrize(
     "phone",
     [
         "+44 20 7946 0958",

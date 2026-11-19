@@ -43,14 +43,18 @@ PHONE_CANDIDATE = re.compile(r"(?<!\w)\+?\(?\d[\d \t().\-–—]*\d(?!\d)")
 PHONE_MIN_DIGITS = 10
 PHONE_MAX_DIGITS = 15
 YEAR_PATTERN = re.compile(r"(?:19|20)\d{2}")
+MONTH_PATTERN = re.compile(r"0?[1-9]|1[0-2]")
 
 
 def _is_phone(candidate: str) -> bool:
     digit_groups = re.findall(r"\d+", candidate)
     if not PHONE_MIN_DIGITS <= sum(len(group) for group in digit_groups) <= PHONE_MAX_DIGITS:
         return False
-    # "2018 - 2020 - 2022" has enough digits but is a list of years.
-    return not all(YEAR_PATTERN.fullmatch(group) for group in digit_groups)
+    # "2018 - 2020 - 2022" and "2020-01 - 2021-03" have enough digits but are
+    # years and months, so a date span: no phone group is only a year or a month.
+    return not all(
+        YEAR_PATTERN.fullmatch(group) or MONTH_PATTERN.fullmatch(group) for group in digit_groups
+    )
 
 
 def _has_phone(text: str) -> bool:
