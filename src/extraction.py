@@ -49,11 +49,6 @@ class ExtractedDocument:
     page_count: int
 
 
-def extract_text(pdf_bytes: bytes) -> str:
-    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-        return "\n".join(page.extract_text() or "" for page in pdf.pages)
-
-
 def _read_document(pdf_bytes: bytes) -> ExtractedDocument:
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)

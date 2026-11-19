@@ -1,6 +1,6 @@
 """extract_resume_document carries the text and the page count the Checks read."""
 from conftest import SYNTHETIC_RESUME_LINES, make_multipage_pdf, make_pdf
-from extraction import extract_resume_document, extract_resume_text, extract_text
+from extraction import extract_resume_document, extract_resume_text
 
 
 def test_page_count_comes_from_the_pdf():
@@ -17,10 +17,12 @@ def test_a_single_page_pdf_has_page_count_one():
     assert document.page_count == 1
 
 
-def test_document_text_is_the_same_string_extract_text_returns():
+def test_document_text_holds_every_line_of_every_page_in_order():
     pdf = make_multipage_pdf([SYNTHETIC_RESUME_LINES, SYNTHETIC_RESUME_LINES])
 
-    assert extract_resume_document(pdf, "c-1").text == extract_text(pdf)
+    document = extract_resume_document(pdf, "c-1")
+
+    assert document.text.splitlines() == SYNTHETIC_RESUME_LINES * 2
 
 
 def test_extract_resume_text_still_returns_a_plain_string():
@@ -28,4 +30,4 @@ def test_extract_resume_text_still_returns_a_plain_string():
     text = extract_resume_text(make_pdf(SYNTHETIC_RESUME_LINES), "c-1")
 
     assert isinstance(text, str)
-    assert text == extract_text(make_pdf(SYNTHETIC_RESUME_LINES))
+    assert text.splitlines() == SYNTHETIC_RESUME_LINES
