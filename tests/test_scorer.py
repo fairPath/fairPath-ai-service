@@ -1,7 +1,7 @@
 """The Scorer: Category Score = round(100 × Σ weight·value / Σ weight).
 
 Expected values are worked by hand from the spec's starting weights:
-Parseability: multi_column 3, unreadable_characters 3, missing_sections 2, table_content 2
+Parseability: unreadable_characters 3, missing_sections 2
 Formatting:   missing_contact 5, too_long 3, inconsistent_dates 2
 Writing:      impact 3, clarity 3, spelling 2, grammar 2
 """
@@ -62,3 +62,10 @@ def test_category_whose_components_are_all_not_applicable_scores_100():
 def test_unknown_component_is_a_config_error():
     with pytest.raises(KeyError):
         score({"not_a_component": 1})
+
+
+def test_parseability_weights_are_unreadable_characters_3_and_missing_sections_2():
+    # The multi-column and table Checks are cut, so Parseability has two components:
+    # 100 × (3·0 + 2·1) / 5 = 40, and 100 × (3·1 + 2·0.5) / 5 = 80.
+    assert score({"unreadable_characters": 0, "missing_sections": 1}).parseability == 40
+    assert score({"unreadable_characters": 1, "missing_sections": 0.5}).parseability == 80

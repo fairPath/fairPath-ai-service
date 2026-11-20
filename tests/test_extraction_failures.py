@@ -78,7 +78,7 @@ def test_failure_does_not_reach_the_pipeline_or_the_logs(client, auth, pdf_store
     import resume
 
     pdf_store["resumes/x.pdf"] = short_pdf()
-    monkeypatch.setattr(resume, "analyze_text", lambda text: pytest.fail("pipeline ran"))
+    monkeypatch.setattr(resume, "analyze_document", lambda doc: pytest.fail("pipeline ran"))
     caplog.set_level("DEBUG")
 
     client.post("/resume", json=BODY, headers=auth)

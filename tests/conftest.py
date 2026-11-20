@@ -7,6 +7,7 @@ from reportlab.pdfgen import canvas
 import llm
 import main
 import resume
+from extraction import ExtractedDocument
 
 TOKEN = "test-token"
 
@@ -27,6 +28,11 @@ SYNTHETIC_RESUME_LINES = [
 NO_CONTACT_RESUME_LINES = [line for line in SYNTHETIC_RESUME_LINES if "@" not in line]
 
 
+def document_from_text(text: str, page_count: int = 1) -> ExtractedDocument:
+    """An ExtractedDocument built by hand, so a Check's unit test needs no PDF."""
+    return ExtractedDocument(text=text, page_count=page_count)
+
+
 def make_pdf(lines: list[str]) -> bytes:
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer)
@@ -34,6 +40,20 @@ def make_pdf(lines: list[str]) -> bytes:
     for line in lines:
         pdf.drawString(72, y, line)
         y -= 18
+    pdf.save()
+    return buffer.getvalue()
+
+
+def make_multipage_pdf(pages: list[list[str]]) -> bytes:
+    """A PDF with one page per list of lines."""
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer)
+    for lines in pages:
+        y = 800
+        for line in lines:
+            pdf.drawString(72, y, line)
+            y -= 18
+        pdf.showPage()
     pdf.save()
     return buffer.getvalue()
 
