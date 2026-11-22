@@ -79,3 +79,9 @@ raw error text are not forwarded. The metadata remains available to callers. Spr
 policy for both features: one automatic retry after five seconds only for connection
 refusal or untyped 503, without extending the delay using Retry-After. Typed rate-limit
 errors permit a manual retry according to the shared stored-code rule.
+
+## Account deletion
+
+Spring owns account deletion and résumé storage cleanup. This service keeps no
+account records. If an AI request finishes during deletion, Spring decides whether
+the result can still be saved.
